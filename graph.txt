@@ -1,27 +1,54 @@
-class Graph:
-    def __init__(self, vertices):
-        self.vertices = vertices
-        self.adjacency_list = {v: set() for v in vertices}
+from constraint import *
 
-    def add_edge(self, v1, v2):
-        self.adjacency_list[v1].add(v2)
-        self.adjacency_list[v2].add(v1)
+# Get data from file
+def getData(filename):
+    with open(filename, 'r') as f:
+        data = f.read()
+    # Extract colors value
+    colors = int(data[data.find('colors = ') + len('colors = '):data.find('\n', data.find('colors = '))])
+    # Extract list of number,number pairs
+    pairs = [(int(x.split(',')[0]), int(x.split(',')[1])) for x in data.split('\n') if ',' in x and not x.startswith('#')]
+    return [colors,pairs]
 
-    def get_neighbors(self, v):
-        return self.adjacency_list[v]
+# Create CSP instance
+def createCSP(colors, pairs):
+    problem = Problem()
+    nodes = set()
+    # Add variables to the CSP
+    for pair in pairs:
+        nodes.add(pair[0])
+        nodes.add(pair[1])
+        problem.addVariable(pair[0], range(colors))
+        problem.addVariable(pair[1], range(colors))
+    # Add constraints to the CSP
+    for pair in pairs:
+        problem.addConstraint(lambda x, y: x != y, pair)
+    return problem
 
+# Get the solution of the CSP instance
+def solveCSP(problem):
+    solution = problem.getSolution()
+    if solution is None:
+        return None
+    # Format the solution
+    formatted_solution = {}
+    for variable, value in solution.items():
+        if value not in formatted_solution:
+            formatted_solution[value] = []
+        formatted_solution[value].append(variable)
+    return formatted_solution
 
-def graph_coloring(graph):
-    colors = {}
-    for vertex in graph.vertices:
-        used_colors = set()
-        for neighbor in graph.get_neighbors(vertex):
-            if neighbor in colors:
-                used_colors.add(colors[neighbor])
-        for i in range(1, len(graph.vertices) + 1):
-            if i not in used_colors:
-                colors[vertex] = i
-                break
-        else:
-            return "No valid coloring exists."
-    return colors
+# Main function
+def main():
+    filename = 'input.txt'
+    input = getData(filename)
+    problem = createCSP(data[0], data[1])
+    solution = solveCSP(problem)
+    if solution is None:
+        print('No solution found')
+    else:
+        for color, nodes in solution.items():
+            print('Color {}: {}'.format(color, nodes))
+
+if __name__ == '__main__':
+    main()
